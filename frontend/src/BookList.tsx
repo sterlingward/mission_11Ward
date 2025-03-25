@@ -54,8 +54,9 @@ function BookList({ addToCart, cart, setLastPage, lastPage }: BookListProps) {
       );
       const data = await res.json();
       const categories = Array.from(
-        new Set(data.books.map((b: Book) => b.category))
+        new Set<string>(data.books.map((b: Book) => b.category))
       );
+
       setAllCategories(['All', ...categories]);
     };
     fetchAll();
