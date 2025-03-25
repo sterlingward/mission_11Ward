@@ -1,176 +1,246 @@
-// Sterling's Website
+// Sterling's BookList.tsx
 
 import { useEffect, useState } from 'react';
 import { Book } from './types/Book';
+import { useNavigate } from 'react-router-dom';
 
-function BookList() {
-  // State for storing current book list and original default list
+interface CartItem {
+  book: Book;
+  quantity: number;
+}
+
+interface BookListProps {
+  addToCart: (book: Book) => void;
+  cart: CartItem[];
+  setLastPage: (pageNum: number) => void;
+  lastPage: number;
+}
+
+function BookList({ addToCart, cart, setLastPage, lastPage }: BookListProps) {
   const [books, setBooks] = useState<Book[]>([]);
-  const [defaultBooks, setDefaultBooks] = useState<Book[]>([]);
-
-  // Pagination states
-  const [totalItems, setTotalItems] = useState<number>(0);
-  const [pageSize, setPageSize] = useState<number>(5);
-  const [pageNum, setPageNum] = useState<number>(1);
-  const [totalPages, setTotalPages] = useState<number>(0);
-
-  // Sorting mode state (default, ascending, or descending)
+  const [totalItems, setTotalItems] = useState(0);
+  const [pageSize, setPageSize] = useState(5);
+  const [pageNum, setPageNum] = useState(lastPage || 1);
+  const [totalPages, setTotalPages] = useState(0);
   const [sortMode, setSortMode] = useState<'default' | 'asc' | 'desc'>(
     'default'
   );
+  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [allCategories, setAllCategories] = useState<string[]>([]);
+  const [showToast, setShowToast] = useState(false);
 
-  // Fetch books when page size, page number, or totalItems changes
+  const navigate = useNavigate();
+
+  // Fetch books from backend
   useEffect(() => {
     const fetchBooks = async () => {
       const response = await fetch(
-        `https://localhost:5000/Book/AllBooks?pageSize=${pageSize}&pageNum=${pageNum}`
+        `https://localhost:5000/Book/AllBooks?pageSize=${pageSize}&pageNum=${pageNum}&category=${categoryFilter}`
       );
       const data = await response.json();
-
-      // Set the fetched books and maintain original ordering
       setBooks(data.books);
-      setDefaultBooks(data.books);
-
-      // Update pagination info
       setTotalItems(data.totalNumBooks);
-      setTotalPages(Math.ceil(data.totalNumBooks / pageSize)); // Use data.totalNumBooks instead of stale totalItems
-      setSortMode('default');
+      setTotalPages(Math.ceil(data.totalNumBooks / pageSize));
     };
 
     fetchBooks();
-  }, [pageSize, pageNum]);
+  }, [pageSize, pageNum, categoryFilter]);
 
-  // Handle sorting the books by title
+  // Fetch all categories once
+  useEffect(() => {
+    const fetchAll = async () => {
+      const res = await fetch(
+        `https://localhost:5000/Book/AllBooks?pageSize=1000&pageNum=1`
+      );
+      const data = await res.json();
+      const categories = Array.from(
+        new Set(data.books.map((b: Book) => b.category))
+      );
+      setAllCategories(['All', ...categories]);
+    };
+    fetchAll();
+  }, []);
+
+  // Sort books
   const handleSortByTitle = () => {
-    let newSortMode: 'default' | 'asc' | 'desc';
+    const newSort: 'default' | 'asc' | 'desc' =
+      sortMode === 'default' ? 'asc' : sortMode === 'asc' ? 'desc' : 'default';
+    setSortMode(newSort);
 
-    // Toggle sorting mode
-    if (sortMode === 'default') {
-      newSortMode = 'asc';
-    } else if (sortMode === 'asc') {
-      newSortMode = 'desc';
-    } else {
-      newSortMode = 'default';
-    }
-    setSortMode(newSortMode);
-
-    // Apply the selected sorting logic
-    if (newSortMode === 'default') {
-      setBooks(defaultBooks); // Revert to original order
-    } else if (newSortMode === 'asc') {
-      const sorted = [...defaultBooks].sort((a, b) =>
-        a.title.localeCompare(b.title)
-      );
-      setBooks(sorted);
-    } else if (newSortMode === 'desc') {
-      const sorted = [...defaultBooks].sort((a, b) =>
-        b.title.localeCompare(a.title)
-      );
-      setBooks(sorted);
-    }
+    if (newSort === 'default') return;
+    const sorted = [...books].sort((a, b) =>
+      newSort === 'asc'
+        ? a.title.localeCompare(b.title)
+        : b.title.localeCompare(a.title)
+    );
+    setBooks(sorted);
   };
 
-  return (
-    <>
-      {/* Page Header */}
-      <h1>Prof Hilton's Book Store</h1>
-      <br />
+  // Add book to cart
+  const handleAddToCart = (book: Book) => {
+    addToCart(book);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2000);
+    setLastPage(pageNum);
+  };
 
-      {/* Sort Button */}
-      <button onClick={handleSortByTitle} className="btn btn-outline-secondary">
-        Sort by Title{' '}
-        {sortMode === 'default'
-          ? '(Default)'
-          : sortMode === 'asc'
-            ? '(Ascending)'
-            : '(Descending)'}
-      </button>
-      <br />
-      <br />
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const cartTotal = cart.reduce(
+    (sum, item) => sum + item.book.price * item.quantity,
+    0
+  );
+
+  return (
+    <div className="container py-4">
+      <h1 className="mb-4 text-center">Prof Hilton's Book Store</h1>
+
+      {/* Cart Summary with BADGE – #notcoveredinthevideos THIS IS ONE OF THE THINGS THAT I ADDED THAT WE HAVEN'T DONE.*/}
+      <div className="d-flex justify-content-end align-items-center mb-3">
+        <button
+          className="btn btn-primary me-3"
+          onClick={() => navigate('/cart')}
+        >
+          View Cart{' '}
+          <span className="badge bg-light text-dark ms-2">{cartCount}</span>
+        </button>
+        <strong>Total: ${cartTotal.toFixed(2)}</strong>
+      </div>
+
+      {/* Toast – #notcoveredinthevideos THIS IS MY SECOND BOOTSTRAP ITEM THAT WE HAVEN'T COVERED.*/}
+      <div
+        className={`toast align-items-center text-bg-success position-fixed bottom-0 end-0 m-3 ${
+          showToast ? 'show' : 'hide'
+        }`}
+        role="alert"
+      >
+        <div className="d-flex">
+          <div className="toast-body">Book added to cart!</div>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="d-flex justify-content-between flex-wrap mb-4">
+        {/* Category Filter */}
+        <div>
+          <label className="me-2 fw-semibold">Filter by Category:</label>
+          <select
+            value={categoryFilter}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value);
+              setPageNum(1);
+            }}
+            className="form-select d-inline w-auto"
+          >
+            {allCategories.map((cat, i) => (
+              <option key={i} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Page Size */}
+        <div>
+          <label className="me-2 fw-semibold">Results Per Page:</label>
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setPageNum(1);
+            }}
+            className="form-select d-inline w-auto"
+          >
+            {[5, 10, 20].map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Sort */}
+        <button
+          onClick={handleSortByTitle}
+          className="btn btn-outline-secondary"
+        >
+          Sort by Title{' '}
+          {sortMode === 'default'
+            ? '(Default)'
+            : sortMode === 'asc'
+              ? '(Ascending)'
+              : '(Descending)'}
+        </button>
+      </div>
 
       {/* Book Cards */}
-      {books.map((b) => (
-        <div key={b.bookID}>
-          <div id="bookCard" className="card border-secondary mb-3">
-            <h3 className="card-title">{b.title}</h3>
-            <div className="card-body">
-              <ul className="list-unstyled">
-                <li>
-                  <strong>Author: </strong>
-                  {b.author}
-                </li>
-                <li>
-                  <strong>Publisher: </strong>
-                  {b.publisher}
-                </li>
-                <li>
-                  <strong>ISBN: </strong>
-                  {b.isbn}
-                </li>
-                <li>
-                  <strong>Classification: </strong>
-                  {b.classification}
-                </li>
-                <li>
-                  <strong>Category: </strong>
-                  {b.category}
-                </li>
-                <li>
-                  <strong>Page Count: </strong>
-                  {b.pageCount}
-                </li>
-                <li>
-                  <strong>Price: </strong>${b.price.toFixed(2)}
-                </li>
-              </ul>
+      <div className="row row-cols-1 row-cols-md-2 g-4">
+        {books.map((b) => (
+          <div key={b.bookID} className="col">
+            <div className="card h-100 shadow-sm">
+              <div className="card-body">
+                <h5 className="card-title">{b.title}</h5>
+                <ul className="list-unstyled mb-3">
+                  <li>
+                    <strong>Author:</strong> {b.author}
+                  </li>
+                  <li>
+                    <strong>Publisher:</strong> {b.publisher}
+                  </li>
+                  <li>
+                    <strong>ISBN:</strong> {b.isbn}
+                  </li>
+                  <li>
+                    <strong>Classification:</strong> {b.classification}
+                  </li>
+                  <li>
+                    <strong>Category:</strong> {b.category}
+                  </li>
+                  <li>
+                    <strong>Page Count:</strong> {b.pageCount}
+                  </li>
+                  <li>
+                    <strong>Price:</strong> ${b.price.toFixed(2)}
+                  </li>
+                </ul>
+                <button
+                  className="btn btn-success w-100"
+                  onClick={() => handleAddToCart(b)}
+                >
+                  Add to Cart
+                </button>
+              </div>
             </div>
           </div>
-          <br />
-        </div>
-      ))}
-      <br />
+        ))}
+      </div>
 
-      {/* Results Per Page Dropdown */}
-      <label>
-        Results Per Page:
-        <select
-          value={pageSize}
-          onChange={(p) => {
-            setPageSize(Number(p.target.value)); // Update page size
-            setPageNum(1); // Reset to page 1
-          }}
-        >
-          <option value="5">5</option>
-          <option value="10">10</option>
-          <option value="20">20</option>
-        </select>
-      </label>
-      <br />
-      <br />
-
-      {/* Pagination Controls */}
-      <button disabled={pageNum === 1} onClick={() => setPageNum(pageNum - 1)}>
-        Previous
-      </button>
-
-      {/* Individual Page Buttons */}
-      {[...Array(totalPages)].map((_, i) => (
+      {/* Pagination */}
+      <div className="d-flex justify-content-center mt-4 flex-wrap gap-2">
         <button
-          key={i + 1}
-          onClick={() => setPageNum(i + 1)}
-          disabled={pageNum === i + 1}
+          className="btn btn-outline-primary"
+          disabled={pageNum === 1}
+          onClick={() => setPageNum(pageNum - 1)}
         >
-          {i + 1}
+          Previous
         </button>
-      ))}
-
-      <button
-        disabled={pageNum === totalPages}
-        onClick={() => setPageNum(pageNum + 1)}
-      >
-        Next
-      </button>
-    </>
+        {[...Array(totalPages)].map((_, i) => (
+          <button
+            key={i + 1}
+            className={`btn ${pageNum === i + 1 ? 'btn-primary' : 'btn-outline-primary'}`}
+            onClick={() => setPageNum(i + 1)}
+          >
+            {i + 1}
+          </button>
+        ))}
+        <button
+          className="btn btn-outline-primary"
+          disabled={pageNum === totalPages}
+          onClick={() => setPageNum(pageNum + 1)}
+        >
+          Next
+        </button>
+      </div>
+    </div>
   );
 }
 

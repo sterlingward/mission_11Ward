@@ -1,6 +1,6 @@
 using BookStore.API.Data;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 
 namespace BookStore.API.Controllers
 {
@@ -9,27 +9,37 @@ namespace BookStore.API.Controllers
     public class BookController : ControllerBase
     {
         private BookDbContext _bookContext;
-        
+
         public BookController(BookDbContext temp) => _bookContext = temp;
 
+        // Modified endpoint with optional category filter
         [HttpGet("AllBooks")]
-        public IActionResult GetBooks(int pageSize = 5, int pageNum = 1)
+        public IActionResult GetBooks(string? category = null, int pageSize = 5, int pageNum = 1)
         {
-            var something =  _bookContext.Books
-                        .Skip((pageNum - 1) * pageSize)
-                        .Take(pageSize)
-                        .ToList();
-                        
-            var totalNumBooks = _bookContext.Books.Count();
-            
-            var someObject = new
+            var query = _bookContext.Books.AsQueryable();
+
+            // Apply category filter if provided
+            if (!string.IsNullOrEmpty(category) && category != "All")
             {
-                Books = something,
+                query = query.Where(b => b.Category == category);
+            }
+
+            // Total books after filtering
+            var totalNumBooks = query.Count();
+
+            // Apply pagination
+            var pagedBooks = query
+                .Skip((pageNum - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var response = new
+            {
+                Books = pagedBooks,
                 TotalNumBooks = totalNumBooks
             };
-            return Ok(someObject);
+
+            return Ok(response);
         }
-        
-        
     }
 }
