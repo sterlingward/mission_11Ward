@@ -95,7 +95,7 @@ function BookList({ addToCart, cart, setLastPage, lastPage }: BookListProps) {
     <div className="container py-4">
       <h1 className="mb-4 text-center">Prof Hilton's Book Store</h1>
 
-      {/* Cart Summary with BADGE – #notcoveredinthevideos */}
+      {/* Cart Summary with BADGE – #notcoveredinthevideos THIS IS MY BOOTSTRAP NEW ITEM #1*/}
       <div className="d-flex justify-content-end align-items-center mb-3">
         <button
           className="btn btn-primary me-3"
@@ -107,7 +107,7 @@ function BookList({ addToCart, cart, setLastPage, lastPage }: BookListProps) {
         <strong>Total: ${cartTotal.toFixed(2)}</strong>
       </div>
 
-      {/* Toast – #notcoveredinthevideos */}
+      {/* Toast – #notcoveredinthevideos THIS IS MY BOOTSTRAP NEW ITEM #2*/}
       <div
         className={`toast align-items-center text-bg-success position-fixed bottom-0 end-0 m-3 ${
           showToast ? 'show' : 'hide'
