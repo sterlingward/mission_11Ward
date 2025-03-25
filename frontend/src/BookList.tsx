@@ -1,7 +1,7 @@
 // Sterling's Website
 
 import { useEffect, useState } from 'react';
-import { Book } from './types/book';
+import { Book } from './types/Book';
 
 function BookList() {
   // State for storing current book list and original default list
