@@ -4,33 +4,47 @@ import { useEffect, useState } from 'react';
 import { Book } from './types/book';
 
 function BookList() {
+  // State for storing current book list and original default list
   const [books, setBooks] = useState<Book[]>([]);
   const [defaultBooks, setDefaultBooks] = useState<Book[]>([]);
+
+  // Pagination states
+  const [totalItems, setTotalItems] = useState<number>(0);
   const [pageSize, setPageSize] = useState<number>(5);
   const [pageNum, setPageNum] = useState<number>(1);
-  const [totalItems, setTotalItems] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(0);
+
+  // Sorting mode state (default, ascending, or descending)
   const [sortMode, setSortMode] = useState<'default' | 'asc' | 'desc'>(
     'default'
   );
 
+  // Fetch books when page size, page number, or totalItems changes
   useEffect(() => {
     const fetchBooks = async () => {
       const response = await fetch(
         `https://localhost:5000/Book/AllBooks?pageSize=${pageSize}&pageNum=${pageNum}`
       );
       const data = await response.json();
+
+      // Set the fetched books and maintain original ordering
       setBooks(data.books);
       setDefaultBooks(data.books);
+
+      // Update pagination info
       setTotalItems(data.totalNumBooks);
-      setTotalPages(Math.ceil(totalItems / pageSize));
+      setTotalPages(Math.ceil(data.totalNumBooks / pageSize)); // Use data.totalNumBooks instead of stale totalItems
       setSortMode('default');
     };
-    fetchBooks();
-  }, [pageSize, pageNum, totalItems]);
 
+    fetchBooks();
+  }, [pageSize, pageNum]);
+
+  // Handle sorting the books by title
   const handleSortByTitle = () => {
     let newSortMode: 'default' | 'asc' | 'desc';
+
+    // Toggle sorting mode
     if (sortMode === 'default') {
       newSortMode = 'asc';
     } else if (sortMode === 'asc') {
@@ -40,17 +54,15 @@ function BookList() {
     }
     setSortMode(newSortMode);
 
+    // Apply the selected sorting logic
     if (newSortMode === 'default') {
-      // Revert to the original unsorted order
-      setBooks(defaultBooks);
+      setBooks(defaultBooks); // Revert to original order
     } else if (newSortMode === 'asc') {
-      // Sort ascending based on the original unsorted list
       const sorted = [...defaultBooks].sort((a, b) =>
         a.title.localeCompare(b.title)
       );
       setBooks(sorted);
     } else if (newSortMode === 'desc') {
-      // Sort descending based on the original unsorted list
       const sorted = [...defaultBooks].sort((a, b) =>
         b.title.localeCompare(a.title)
       );
@@ -60,9 +72,11 @@ function BookList() {
 
   return (
     <>
+      {/* Page Header */}
       <h1>Prof Hilton's Book Store</h1>
       <br />
 
+      {/* Sort Button */}
       <button onClick={handleSortByTitle} className="btn btn-outline-secondary">
         Sort by Title{' '}
         {sortMode === 'default'
@@ -74,6 +88,7 @@ function BookList() {
       <br />
       <br />
 
+      {/* Book Cards */}
       {books.map((b) => (
         <div key={b.bookID}>
           <div id="bookCard" className="card border-secondary mb-3">
@@ -115,13 +130,14 @@ function BookList() {
       ))}
       <br />
 
+      {/* Results Per Page Dropdown */}
       <label>
         Results Per Page:
         <select
           value={pageSize}
           onChange={(p) => {
-            setPageSize(Number(p.target.value));
-            setPageNum(1);
+            setPageSize(Number(p.target.value)); // Update page size
+            setPageNum(1); // Reset to page 1
           }}
         >
           <option value="5">5</option>
@@ -132,10 +148,12 @@ function BookList() {
       <br />
       <br />
 
+      {/* Pagination Controls */}
       <button disabled={pageNum === 1} onClick={() => setPageNum(pageNum - 1)}>
         Previous
       </button>
 
+      {/* Individual Page Buttons */}
       {[...Array(totalPages)].map((_, i) => (
         <button
           key={i + 1}
