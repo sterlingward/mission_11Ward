@@ -1,24 +1,24 @@
- 📚 Prof Hilton's Book Store
+Prof Hilton's Book Store
 
 This is a full-stack web app built for a school project. It displays a list of books with filtering, pagination, and cart functionality. Built using React + TypeScript on the frontend and ASP.NET Core on the backend.
 
 ---
 
-## 🔧 Technologies Used
+🔧 Technologies Used
 
-### Frontend
+Frontend
 - React + TypeScript
 - Bootstrap 5
 - React Router DOM
 - Vite
 
-### Backend
+Backend
 - ASP.NET Core Web API
 - Entity Framework Core
 
 ---
 
-## 💡 Features
+💡 Features
 
 - 🛒 **Cart** functionality with quantity, subtotal, and total tracking
 - 🔍 **Filtering** by book category
@@ -29,9 +29,9 @@ This is a full-stack web app built for a school project. It displays a list of b
 
 ---
 
-## 🚀 Getting Started
+🚀 Getting Started
 
-### 1. Clone the repository
+1. Clone the repository
 ```bash
 git clone https://github.com/your-username/mission_11Ward.git
 cd mission_11Ward
