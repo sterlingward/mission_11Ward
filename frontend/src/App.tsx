@@ -1,71 +1,114 @@
-// Sterling's Project – App.tsx
+// Sterling's Cart.tsx
 
-import './App.css';
-import BookList from './BookList';
-import Cart from './Cart';
-import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Book } from './types/Book';
 
-// Cart item shape
 interface CartItem {
   book: Book;
   quantity: number;
 }
 
-function App() {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [lastPage, setLastPage] = useState<number>(1);
+interface CartProps {
+  cart: CartItem[];
+  setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
+  lastPage: number;
+}
 
-  useEffect(() => {
-    const savedCart = sessionStorage.getItem('cart');
-    if (savedCart) {
-      setCart(JSON.parse(savedCart));
-    }
-  }, []);
+function Cart({ cart, setCart, lastPage }: CartProps) {
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    sessionStorage.setItem('cart', JSON.stringify(cart));
-  }, [cart]);
-
-  const addToCart = (book: Book) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find(
-        (item) => item.book.bookID === book.bookID
-      );
-      if (existingItem) {
-        return prevCart.map((item) =>
-          item.book.bookID === book.bookID
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      } else {
-        return [...prevCart, { book, quantity: 1 }];
-      }
-    });
+  // Increase quantity
+  const increaseQty = (bookID: number) => {
+    setCart((prev) =>
+      prev.map((item) =>
+        item.book.bookID === bookID
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      )
+    );
   };
 
+  // Decrease quantity
+  const decreaseQty = (bookID: number) => {
+    setCart((prev) =>
+      prev
+        .map((item) =>
+          item.book.bookID === bookID
+            ? { ...item, quantity: item.quantity - 1 }
+            : item
+        )
+        .filter((item) => item.quantity > 0)
+    );
+  };
+
+  // Remove item
+  const removeFromCart = (bookID: number) => {
+    setCart((prev) => prev.filter((item) => item.book.bookID !== bookID));
+  };
+
+  const total = cart.reduce(
+    (sum, item) => sum + item.book.price * item.quantity,
+    0
+  );
+
   return (
-    <Router>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <BookList
-              addToCart={addToCart}
-              cart={cart}
-              setLastPage={setLastPage}
-              lastPage={lastPage}
-            />
-          }
-        />
-        <Route
-          path="/cart"
-          element={<Cart cart={cart} setCart={setCart} lastPage={lastPage} />}
-        />
-      </Routes>
-    </Router>
+    <div className="container py-5">
+      <h1 className="mb-4 text-center">Your Shopping Cart</h1>
+
+      {cart.length === 0 ? (
+        <div className="alert alert-info text-center">Your cart is empty.</div>
+      ) : (
+        <div className="row row-cols-1 g-4">
+          {cart.map((item) => (
+            <div key={item.book.bookID} className="col">
+              <div className="card shadow-sm">
+                <div className="card-body">
+                  <h5 className="card-title">{item.book.title}</h5>
+                  <p className="card-text">
+                    <strong>Price:</strong> ${item.book.price.toFixed(2)} <br />
+                    <strong>Quantity:</strong>{' '}
+                    <button
+                      className="btn btn-sm btn-outline-secondary me-2"
+                      onClick={() => decreaseQty(item.book.bookID)}
+                    >
+                      -
+                    </button>
+                    {item.quantity}
+                    <button
+                      className="btn btn-sm btn-outline-secondary ms-2"
+                      onClick={() => increaseQty(item.book.bookID)}
+                    >
+                      +
+                    </button>
+                    <br />
+                    <strong>Subtotal:</strong> $
+                    {(item.book.price * item.quantity).toFixed(2)}
+                  </p>
+                  <button
+                    className="btn btn-sm btn-danger"
+                    onClick={() => removeFromCart(item.book.bookID)}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="d-flex justify-content-between align-items-center mt-5">
+        <button
+          className="btn btn-outline-primary"
+          onClick={() => navigate('/', { state: { page: lastPage } })}
+        >
+          ← Continue Shopping
+        </button>
+
+        <h4>Total: ${total.toFixed(2)}</h4>
+      </div>
+    </div>
   );
 }
 
-export default App;
+export default Cart;
